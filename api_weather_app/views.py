@@ -1,6 +1,10 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 import requests
+import json
+
+# Replace 'YOUR_IPINFO_TOKEN' with your actual ipinfo.io token
+IPINFO_TOKEN = 'de618f7d55f0ee'
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -16,7 +20,8 @@ def hello_api(request):
     client_ip = get_client_ip(request)
 
     try:
-        ip_url = f'https://ipapi.co/{client_ip}/json/'
+        # Get location data from ipinfo.io
+        ip_url = f'https://ipinfo.io/{client_ip}/json?token={IPINFO_TOKEN}'
         ip_response = requests.get(ip_url)
         
         if ip_response.status_code == 200:
