@@ -1,20 +1,26 @@
-
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 import requests
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 @require_GET
 def hello_api(request):
     visitor_name = request.GET.get('visitor_name', 'Guest')
+    client_ip = get_client_ip(request)
 
     try:
-        # Get IP and geolocation data from ipapi.co
-        ip_url = 'https://ipapi.co/json/'
+        ip_url = f'https://ipapi.co/{client_ip}/json/'
         ip_response = requests.get(ip_url)
         
         if ip_response.status_code == 200:
             ip_data = ip_response.json()
-            client_ip = ip_data.get('ip', 'Unknown')
             city = ip_data.get('city', 'Unknown')
         else:
             return JsonResponse({'error': 'Failed to fetch IP and geolocation data'}, status=ip_response.status_code)
