@@ -2,44 +2,35 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 import requests
 
-IPINFO_TOKEN = 'de618f7d55f0ee'
-
-def get_client_ip(request):
-    # PythonAnywhere specific header
-    ip = request.META.get('HTTP_X_REAL_IP')
-    if not ip:
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
+def get_client_ip():
+    try:
+        response = requests.get('https://api.ipify.org?format=json')
+        if response.status_code == 200:
+            return response.json()['ip']
         else:
-            ip = request.META.get('REMOTE_ADDR')
-    return ip
+            return None
+    except requests.exceptions.RequestException:
+        return None
 
 @require_GET
 def hello_api(request):
     visitor_name = request.GET.get('visitor_name', 'Guest')
-    client_ip = get_client_ip(request)
+    client_ip = get_client_ip()
+
+    if not client_ip:
+        return JsonResponse({'error': 'Failed to fetch IP address'}, status=500)
 
     try:
-        # Get location data from ipinfo.io
-        ip_url = f'https://ipinfo.io/{client_ip}/json?token={IPINFO_TOKEN}'
-        ip_response = requests.get(ip_url)
-        
-        if ip_response.status_code == 200:
-            ip_data = ip_response.json()
-            city = ip_data.get('city', 'Unknown')
-        else:
-            return JsonResponse({'error': 'Failed to fetch IP and geolocation data'}, status=ip_response.status_code)
-
-        # Get weather data
+        # Get weather data directly using IP
         api_key = '3256268559ec8bacb647c6d9cbf7e5ef'
-        weather_url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric'
+        weather_url = f'http://api.openweathermap.org/data/2.5/weather?ip={client_ip}&appid={api_key}&units=metric'
 
         weather_response = requests.get(weather_url)
         weather_data = weather_response.json()
 
         if weather_response.status_code == 200:
             temperature = weather_data['main']['temp']
+            city = weather_data['name']
 
             greeting = f"Hello, {visitor_name}! The temperature is {temperature:.0f} degrees Celsius in {city}"
 
