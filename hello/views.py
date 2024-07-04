@@ -11,7 +11,7 @@ def get_client_ip(request):
     return client_ip
 @require_GET
 def hello_api(request):
-    visitor_name = request.GET.get('visitor_name', 'Guest')
+    visitor_name = request.GET.get('visitor_name', 'Guest').strip('"')
     client_ip = get_client_ip(request)
 
     if not client_ip:
@@ -48,8 +48,8 @@ def hello_api(request):
             if weather_response.status_code == 200:
                 temperature = weather_data['main']['temp']
                 
-                greeting = f"Hello, {visitor_name}! The temperature is {temperature:.0f} degrees Celsius in {city}"
-                
+                greeting = f'Hello, {visitor_name}! The temperature is {temperature:.0f} degrees Celsius in {city}'
+            
                 response_data = {
                     "client_ip": client_ip,
                     "location": city,
